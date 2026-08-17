@@ -106,3 +106,19 @@ if st.session_state.gemini_api_key :
             "Then call execute_move(move) to make a move.",
             llm_config={"config_list": agent_white_config_list,"cache_seed":None},
         )
+        
+        game_master = ConversableAgent(
+            name = "Game_Master",
+            llm_config = False,
+            is_tremination_msg = check_made_move,
+            default_auto_reply = "Please make a move.",
+            human_input_mode = "NEVER",
+        )
+        
+        register_function(
+            excute_move,
+            caller =agent_white,
+            executor = game_master,
+            name = "execute_move",
+            description = "Call this tool to make a move.",
+        )

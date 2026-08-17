@@ -67,3 +67,42 @@ def avaliable_moves() -> str:
         return move_desc +="\nCheck!"
     except ValueError:
         return f"Invalid move format: {move}. Please provide a valid UCI move."
+def check_made_move(msg):
+    if st.session_state.made_move:
+        st.session_state.made_move = False
+        return True
+    else:
+        return False
+        
+if st.session_state.gemini_api_key :
+    try:
+        agent_white_config_list = [
+            {
+                "model":"gemini-1.5",
+                "api_key": st.session_state.gemini_api_key,
+            },
+        ]
+        
+        agent_black_config_list = [
+            {
+                "model":"gemini-1.5",
+                "api_key": st.session_state.gemini_api_key,
+            }
+        ]
+        
+        agent_black= ConversableAgent(
+            name="Agent_Black",
+            system_message = "You are a professional chess player and you play as black. "
+            "First call available_moves() first, to get list of legal available moves. "
+            "Then call execute_move(move) to make a move.",
+            llm_config={"config_list": agent_black_config_list,"cache_seed":None},
+            
+        )
+        
+        agent_white = ConversableAgent(
+            name="Agent_White",
+            system_message = "You are a professional chess player and you play as white. "
+            "First call available_moves() first, to get list of legal available moves. "
+            "Then call execute_move(move) to make a move.",
+            llm_config={"config_list": agent_white_config_list,"cache_seed":None},
+        )

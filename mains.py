@@ -122,3 +122,5 @@ if st.session_state.gemini_api_key :
             name = "execute_move",
             description = "Call this tool to make a move.",
         )
+        
+        

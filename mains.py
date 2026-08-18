@@ -123,4 +123,82 @@ if st.session_state.gemini_api_key :
             description = "Call this tool to make a move.",
         )
         
+        register_function(
+            available_moves,
+            caller =agent_white,
+            executor = game_master,
+            name = "available_moves",
+            description = "Call this tool to get a list of legal available moves.",
+        )
         
+        register_function(
+            excute_move,
+            caller =agent_black,
+            executor = game_master,
+            name = "execute_move",
+            description = "Call this tool to make a move.",
+        )
+        
+        register_function(
+            available_moves,
+            caller =agent_black,
+            executor = game_master,
+            name = "available_moves",
+            description = "Call this tool to get a list of legal available moves.",
+        )
+        
+        agent_white.register_nested_chats(
+            trigerr=agents_black,
+            chat_quene=[
+                {
+                    "sender": game_master,
+                    "recipient": agent_white,
+                    "summary_method": "last_msg",
+                }
+            ],
+        )
+        
+        agent_black.register_nested_chats(
+            trigger=agent_white,
+            chat_queue=[
+                {
+                    "sender": game_master,
+                    "recipient": agent_black,
+                    "summary_method": "last_msg",
+                }
+            ],
+        )
+        
+        st.info("""
+        This chess game is played between two AG2 AI agents:
+- **Agent White**: A GPT-4o-mini powered chess player controlling white pieces
+- **Agent Black**: A GPT-4o-mini powered chess player controlling black pieces
+
+The game is managed by a **Game Master** that:
+- Validates all moves
+- Updates the chess board
+- Manages turn-taking between players
+- Provides legal move information
+
+        """)
+        
+        initial_board_svg = chess.svg.board(chess.Board(), size=300)
+        st.subheader("Initial Chess Board")
+        st.image(initial_board_svg)
+        
+        if st.button("Start Game"):
+        st.session_state.board.reset()
+        st.session_state.made_move = False
+        st.session_state.move_history = []
+        st.session_state.board_svg = chess.svg.board(st.session_state.board, size=300)
+        st.info("The AI agents will now play against each other. Each agent will analyze the board, " 
+                "request legal moves from the Game Master (proxy agent), and make strategic decisions.")
+        st.success("You can view the interaction between the agents in the terminal output, after the turns between agents end, you get view all the chess board moves displayed below!")
+        st.write("Game started! White's turn")
+        chat_result = agent_black.initiate_chat(
+            recipient=agent_white,
+            message="Let's play chess! You go first, it's your move."
+            max_turns=st.session_state.max_turns,
+            summary_method="reflection_with_llm"
+        )
+        st.subheader("Move History")

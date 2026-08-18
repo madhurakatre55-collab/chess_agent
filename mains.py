@@ -201,4 +201,24 @@ The game is managed by a **Game Master** that:
             max_turns=st.session_state.max_turns,
             summary_method="reflection_with_llm"
         )
+        st.markdown(chat_result.summary)
+        
         st.subheader("Move History")
+        
+        for i, move_svg in enumerate(st.session_state.move_history):
+            if i % 2 == 0:
+                move_by = "Agent White"
+            else:
+                move_by = "Agent Black"
+            st.write(f"**Move {i+1} by {move_by}:")
+            st.image(move_svg)
+        if st.button("Reset Game"):
+            st.session_state.board.reset()
+            st.session_state.made_move = False
+            st.session_state.move_history = []
+            st.session_state.board_svg = chess.svg.board(st.session_state.board, size=300)
+            st.info("Game has been reset. You can start a new game.")
+    except Exception as e:
+        st.error(f"An error occurred: {e},Please check your API key and try again.")
+else:
+    st.warning("Please enter your Gemini API key in the sidebar to start the game.")

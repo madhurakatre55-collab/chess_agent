@@ -222,3 +222,5 @@ The game is managed by a **Game Master** that:
         st.error(f"An error occurred: {e},Please check your API key and try again.")
 else:
     st.warning("Please enter your Gemini API key in the sidebar to start the game.")
+    #code completeed
+    

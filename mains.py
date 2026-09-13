@@ -1,226 +1,233 @@
-from shutil import move
-
+import base64
 import chess
 import chess.svg
 import streamlit as st
 from autogen import ConversableAgent, register_function
 
+# ==============================================================================
+# 1. PAGE CONFIG & SESSION STATE
+# ==============================================================================
+st.set_page_config(page_title="AI Chess Agents", page_icon="♟️", layout="wide")
+
+if "board" not in st.session_state:
+    st.session_state.board = chess.Board()
 if "gemini_api_key" not in st.session_state:
-    st.session_state.gemini_api_key = None 
-if "bored" not in st.session_state:
-    st.session_state.bored = False
+    st.session_state.gemini_api_key = ""
 if "made_move" not in st.session_state:
     st.session_state.made_move = False
-if "board_svg" not in st.session_state:
-    st.session_state.board_svg = None
 if "move_history" not in st.session_state:
     st.session_state.move_history = []
-if "max_truns" not in st.session_state:
-    st.session_state.max_turns = 5
-    
-st.sidebar.title("Chess Agent Configuration")
-gemini_api_key = st.sidebar.text_input("Gemini API Key", type="password")
-if gemini_api_key:
-    st.session_state.gemini_api_key = gemini_api_key
-    st.sidebar.success("Gemini API Key set successfully!")
-    
-st.sidebar.info("For a complete chess game with potential checkmate, it would take max_turns > 200 approximately.
-However, this will consume significant API credits and a lot of time.
-For demo purposes, using 5-10 turns is recommended.
-"")
-max_truns_input = st.sidebar.number_input("f'Max turns of total chess moves set to {st.session_state.max_turns}!")
-st.title("Chess with autogenerate Agents")
-def avaliable_moves() -> str:
+if "max_turns" not in st.session_state:
+    st.session_state.max_turns = 6
+
+
+# ==============================================================================
+# 2. HELPER & CHESS ENGINE FUNCTIONS (AGENT TOOLS)
+# ==============================================================================
+def render_svg(svg_string: str, size: int = 380):
+    """Renders chess SVG cleanly inside Streamlit."""
+    b64 = base64.b64encode(svg_string.encode("utf-8")).decode("utf-8")
+    html_code = f'<div style="display:flex; justify-content:center;"><img src="data:image/svg+xml;base64,{b64}" width="{size}" height="{size}"/></div>'
+    st.markdown(html_code, unsafe_allow_html=True)
+
+
+def available_moves() -> str:
+    """Returns a comma-separated list of legal UCI moves (e.g. 'e2e4, g1f3')."""
+    moves = [m.uci() for m in st.session_state.board.legal_moves]
+    if not moves:
+        return "No legal moves available. The game is over."
+    return f"Legal moves: {', '.join(moves)}"
+
+
+def execute_move(move: str) -> str:
+    """Validates and executes a UCI move on the board, updating move history."""
     try:
-        chess_move = chess.Move.from_uci(move)
+        chess_move = chess.Move.from_uci(move.strip())
         if chess_move not in st.session_state.board.legal_moves:
-            return f"Invalid move:{move}, Please call avalibale_moves() to see valid moves."
-            
+            return f"Invalid move '{move}'. Call available_moves() to check legal moves."
+
+        # Get piece symbol before executing move
+        piece = st.session_state.board.piece_at(chess_move.from_square)
+        piece_symbol = piece.unicode_symbol() if piece else ""
+        from_sq = chess.SQUARE_NAMES[chess_move.from_square]
+        to_sq = chess.SQUARE_NAMES[chess_move.to_square]
+
+        # Push move to board
         st.session_state.board.push(chess_move)
-        st.session_state.made_move = true
-        
-        board_svg = chess.svg.board(st.session_state.board,
-        
-                                    arrows=[(chess_move.from_square,chess_move.to_square)],
-                                    fill={chess_move.from_square:"gray"},
-                                    size = 400)
-        st.session_state.board_svg = board_svg
-        st.session_state.move_history.append(board_svg)
-        
-        moved_peice = st.session_state.board.piece_at(chess_move.to_square)
-        piece_unicode = moved_peice.unicode_symbol()
-        piece_type_name = chess.piece_name(moved_peice.piece_type)
-        piece_name = piece_type_name.capitalize() if piece_unicode.isupper() else piece_type_name
-        
-        from_square = chess.SQUARE_NAMES[chess_move.from_square]
-        to_square = chess.SQUARE_NAMES[chess_move.to_square]
-        move_desc = f"{piece_name}({piece_unicode}) from{from_square} to {to_square}."
+        st.session_state.made_move = True
+
+        # Generate board SVG with highlighted move arrow
+        board_svg = chess.svg.board(
+            st.session_state.board,
+            arrows=[(chess_move.from_square, chess_move.to_square)],
+            fill={chess_move.from_square: "#86efac", chess_move.to_square: "#bbf7d0"},
+            size=380,
+        )
+        move_label = f"{piece_symbol} {from_sq} ➔ {to_sq}"
+        st.session_state.move_history.append((move_label, board_svg))
+
+        desc = f"Executed move: {from_sq} to {to_sq}."
         if st.session_state.board.is_checkmate():
             winner = "White" if st.session_state.board.turn == chess.BLACK else "Black"
-            move_desc += f"\nCheckmate! {winner} wins the game."
+            desc += f"\nCheckmate! {winner} wins."
         elif st.session_state.board.is_stalemate():
-            move_desc += "\nThe game is a draw."
-        elif st.session_state.board.is_insufficient_material():
-            move_desc += "\nThe game is a draw due to insufficient material."
+            desc += "\nDraw by stalemate."
         elif st.session_state.board.is_check():
-            move_desc += "\nCheck!"
-        return move_desc +="\nCheck!"
+            desc += "\nCheck!"
+        return desc
+
     except ValueError:
-        return f"Invalid move format: {move}. Please provide a valid UCI move."
+        return f"Invalid format '{move}'. Please provide valid UCI format like 'e2e4'."
+
+
 def check_made_move(msg):
+    """Termination condition: ends turn when a valid move has occurred."""
     if st.session_state.made_move:
         st.session_state.made_move = False
         return True
+    return False
+
+
+# ==============================================================================
+# 3. SIDEBAR CONFIGURATION
+# ==============================================================================
+st.sidebar.title("⚙️ Game Configuration")
+api_key = st.sidebar.text_input("Gemini API Key", type="password", value=st.session_state.gemini_api_key)
+if api_key:
+    st.session_state.gemini_api_key = api_key
+    st.sidebar.success("API Key saved!")
+
+st.sidebar.info("💡 Recommended: 4–10 turns per run to save API usage.")
+st.session_state.max_turns = st.sidebar.number_input(
+    "Max Turns per Run", min_value=1, max_value=50, value=st.session_state.max_turns, step=1
+)
+
+
+# ==============================================================================
+# 4. MAIN INTERFACE & AGENT EXECUTION
+# ==============================================================================
+st.title("♟️ Autonomous AI Chess Match")
+st.caption("AutoGen Multi-Agent System powered by Google Gemini")
+
+col_board, col_controls = st.columns([1, 1])
+
+with col_board:
+    st.subheader("Current Chess Board")
+    current_board_svg = chess.svg.board(st.session_state.board, size=380)
+    render_svg(current_board_svg)
+
+with col_controls:
+    st.subheader("Controls")
+
+    if not st.session_state.gemini_api_key:
+        st.warning("👈 Please enter your Gemini API Key in the sidebar to start.")
     else:
-        return False
-        
-if st.session_state.gemini_api_key :
-    try:
-        agent_white_config_list = [
-            {
-                "model":"gemini-1.5",
-                "api_key": st.session_state.gemini_api_key,
-            },
-        ]
-        
-        agent_black_config_list = [
-            {
-                "model":"gemini-1.5",
-                "api_key": st.session_state.gemini_api_key,
-            }
-        ]
-        
-        agent_black= ConversableAgent(
-            name="Agent_Black",
-            system_message = "You are a professional chess player and you play as black. "
-            "First call available_moves() first, to get list of legal available moves. "
-            "Then call execute_move(move) to make a move.",
-            llm_config={"config_list": agent_black_config_list,"cache_seed":None},
-            
-        )
-        
-        agent_white = ConversableAgent(
-            name="Agent_White",
-            system_message = "You are a professional chess player and you play as white. "
-            "First call available_moves() first, to get list of legal available moves. "
-            "Then call execute_move(move) to make a move.",
-            llm_config={"config_list": agent_white_config_list,"cache_seed":None},
-        )
-        
-        game_master = ConversableAgent(
-            name = "Game_Master",
-            llm_config = False,
-            is_tremination_msg = check_made_move,
-            default_auto_reply = "Please make a move.",
-            human_input_mode = "NEVER",
-        )
-        
-        register_function(
-            excute_move,
-            caller =agent_white,
-            executor = game_master,
-            name = "execute_move",
-            description = "Call this tool to make a move.",
-        )
-        
-        register_function(
-            available_moves,
-            caller =agent_white,
-            executor = game_master,
-            name = "available_moves",
-            description = "Call this tool to get a list of legal available moves.",
-        )
-        
-        register_function(
-            excute_move,
-            caller =agent_black,
-            executor = game_master,
-            name = "execute_move",
-            description = "Call this tool to make a move.",
-        )
-        
-        register_function(
-            available_moves,
-            caller =agent_black,
-            executor = game_master,
-            name = "available_moves",
-            description = "Call this tool to get a list of legal available moves.",
-        )
-        
-        agent_white.register_nested_chats(
-            trigerr=agents_black,
-            chat_quene=[
-                {
-                    "sender": game_master,
-                    "recipient": agent_white,
-                    "summary_method": "last_msg",
-                }
-            ],
-        )
-        
-        agent_black.register_nested_chats(
-            trigger=agent_white,
-            chat_queue=[
-                {
-                    "sender": game_master,
-                    "recipient": agent_black,
-                    "summary_method": "last_msg",
-                }
-            ],
-        )
-        
-        st.info("""
-        This chess game is played between two AG2 AI agents:
-- **Agent White**: A GPT-4o-mini powered chess player controlling white pieces
-- **Agent Black**: A GPT-4o-mini powered chess player controlling black pieces
+        btn1, btn2 = st.columns(2)
+        with btn1:
+            start_game = st.button("▶️ Start / Next Move", use_container_width=True)
+        with btn2:
+            reset_game = st.button("🔄 Reset Game", use_container_width=True)
 
-The game is managed by a **Game Master** that:
-- Validates all moves
-- Updates the chess board
-- Manages turn-taking between players
-- Provides legal move information
-
-        """)
-        
-        initial_board_svg = chess.svg.board(chess.Board(), size=300)
-        st.subheader("Initial Chess Board")
-        st.image(initial_board_svg)
-        
-        if st.button("Start Game"):
-        st.session_state.board.reset()
-        st.session_state.made_move = False
-        st.session_state.move_history = []
-        st.session_state.board_svg = chess.svg.board(st.session_state.board, size=300)
-        st.info("The AI agents will now play against each other. Each agent will analyze the board, " 
-                "request legal moves from the Game Master (proxy agent), and make strategic decisions.")
-        st.success("You can view the interaction between the agents in the terminal output, after the turns between agents end, you get view all the chess board moves displayed below!")
-        st.write("Game started! White's turn")
-        chat_result = agent_black.initiate_chat(
-            recipient=agent_white,
-            message="Let's play chess! You go first, it's your move."
-            max_turns=st.session_state.max_turns,
-            summary_method="reflection_with_llm"
-        )
-        st.markdown(chat_result.summary)
-        
-        st.subheader("Move History")
-        
-        for i, move_svg in enumerate(st.session_state.move_history):
-            if i % 2 == 0:
-                move_by = "Agent White"
-            else:
-                move_by = "Agent Black"
-            st.write(f"**Move {i+1} by {move_by}:")
-            st.image(move_svg)
-        if st.button("Reset Game"):
+        if reset_game:
             st.session_state.board.reset()
             st.session_state.made_move = False
             st.session_state.move_history = []
-            st.session_state.board_svg = chess.svg.board(st.session_state.board, size=300)
-            st.info("Game has been reset. You can start a new game.")
-    except Exception as e:
-        st.error(f"An error occurred: {e},Please check your API key and try again.")
-else:
-    st.warning("Please enter your Gemini API key in the sidebar to start the game.")
-    #code completeed
-    
+            st.rerun()
+
+        if start_game:
+            try:
+                # LLM Configuration for Gemini
+                llm_config = {
+                    "config_list": [
+                        {
+                            "model": "gemini-1.5-flash",
+                            "api_key": st.session_state.gemini_api_key,
+                            "api_type": "google",
+                        }
+                    ],
+                    "cache_seed": None,
+                }
+
+                # Setup Players & Game Master
+                agent_white = ConversableAgent(
+                    name="Agent_White",
+                    system_message=(
+                        "You play as WHITE in chess. First call available_moves(). "
+                        "Then choose the best move and call execute_move(move) in UCI format (e.g., 'e2e4')."
+                    ),
+                    llm_config=llm_config,
+                )
+
+                agent_black = ConversableAgent(
+                    name="Agent_Black",
+                    system_message=(
+                        "You play as BLACK in chess. First call available_moves(). "
+                        "Then choose the best move and call execute_move(move) in UCI format (e.g., 'e7e5')."
+                    ),
+                    llm_config=llm_config,
+                )
+
+                game_master = ConversableAgent(
+                    name="Game_Master",
+                    llm_config=False,
+                    is_termination_msg=check_made_move,
+                    default_auto_reply="Please make your move.",
+                    human_input_mode="NEVER",
+                )
+
+                # Register Tools
+                for agent in (agent_white, agent_black):
+                    register_function(
+                        available_moves,
+                        caller=agent,
+                        executor=game_master,
+                        name="available_moves",
+                        description="Get the list of legal available moves.",
+                    )
+                    register_function(
+                        execute_move,
+                        caller=agent,
+                        executor=game_master,
+                        name="execute_move",
+                        description="Execute a chess move using UCI format.",
+                    )
+
+                # Register Nested Chat Loops
+                agent_white.register_nested_chats(
+                    trigger=agent_black,
+                    chat_queue=[{"sender": game_master, "recipient": agent_white, "summary_method": "last_msg"}],
+                )
+                agent_black.register_nested_chats(
+                    trigger=agent_white,
+                    chat_queue=[{"sender": game_master, "recipient": agent_black, "summary_method": "last_msg"}],
+                )
+
+                # Initiate Match
+                with st.spinner("AI agents are strategizing and playing..."):
+                    agent_black.initiate_chat(
+                        recipient=agent_white,
+                        message="Let's play chess! You go first as White. Make your move.",
+                        max_turns=st.session_state.max_turns,
+                        summary_method="last_msg",
+                    )
+
+                st.success("Round finished!")
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"Execution error: {e}")
+
+
+# ==============================================================================
+# 5. MOVE HISTORY VISUALIZATION
+# ==============================================================================
+if st.session_state.move_history:
+    st.divider()
+    st.subheader("📜 Move History")
+    history_cols = st.columns(3)
+    for idx, (label, svg) in enumerate(st.session_state.move_history):
+        col = history_cols[idx % 3]
+        with col:
+            turn_player = "White" if idx % 2 == 0 else "Black"
+            st.markdown(f"**Move {idx + 1} ({turn_player}):** `{label}`")
+            render_svg(svg, size=240)

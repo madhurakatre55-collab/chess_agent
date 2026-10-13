@@ -1,6 +1,13 @@
 # Neural Chess: Cognitive AI Assistant & 3D Interactive Coach
 
-A deployment-ready, decoupled multi-tiered chess platform featuring an **interactive 3D frontend** and an asynchronous **FastAPI backend**. The human player competes against an autonomous **Gemini AI Opponent (Black)**, assisted by a real-time **Cognitive AI Grandmaster Coach (Gemini)** that provides tactical concept breakdowns and advance glowing move traces on the board—while preserving the player's complete freedom to make independent moves.
+[![Live Web App](https://img.shields.io/badge/Live%20Demo-chess--agent--1.onrender.com-38bdf8?style=for-the-badge&logo=render)](https://chess-agent-1.onrender.com/)
+[![Backend API](https://img.shields.io/badge/Live%20API-FastAPI%20Docs-emerald?style=for-the-badge&logo=fastapi)](https://chess-agent-pnt7.onrender.com/docs)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-purple?style=for-the-badge&logo=github)](https://github.com/madhurakatre55-collab/chess_agent)
+
+> 🌐 **Live Production Deployment**:
+> - 🎮 **Play the Game Live**: **[https://chess-agent-1.onrender.com/](https://chess-agent-1.onrender.com/)**
+> - ⚡ **FastAPI Backend Swagger Docs**: **[https://chess-agent-pnt7.onrender.com/docs](https://chess-agent-pnt7.onrender.com/docs)**
+> - 📡 **Live API Base URL**: `https://chess-agent-pnt7.onrender.com/api/game`
 
 ---
 
@@ -166,18 +173,23 @@ npm run dev
 ---
 
 ## 🌐 Production Deployment
+ 
+### Live Render Setup
+- **Frontend URL**: [https://chess-agent-1.onrender.com/](https://chess-agent-1.onrender.com/)
+- **Backend API URL**: [https://chess-agent-pnt7.onrender.com/](https://chess-agent-pnt7.onrender.com/)
+- **Interactive Swagger Docs**: [https://chess-agent-pnt7.onrender.com/docs](https://chess-agent-pnt7.onrender.com/docs)
 
-### Backend Deployment (Render / Railway / Cloud Run / EC2)
-- Root directory: `backend/`
-- Command: `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000`
-- Environment Variables:
-  - `GEMINI_API_KEY`: Your Google Gemini API Key.
-  - `HOST`: `0.0.0.0`
-  - `PORT`: `8000`
+### Backend Deployment (Render Web Service)
+- **Environment**: Python 3
+- **Root Directory**: *(empty)*
+- **Build Command**: `pip install -r backend/requirements.txt`
+- **Start Command**: `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+- **Environment Variables**:
+  - `GEMINI_API_KEY`: Your Google Gemini API Key
 
-### Frontend Deployment (Vercel / Netlify / Cloudflare Pages)
-- Root directory: `frontend/`
-- Build Command: `npm run build`
-- Output Directory: `dist/`
-- Environment Variables:
-  - `VITE_API_URL`: `https://your-backend-api-domain.com/api/game`
+### Frontend Deployment (Render Static Site)
+- **Environment**: Static Site
+- **Root Directory**: `frontend`
+- **Build Command**: `npm install && npm run build`
+- **Publish Directory**: `dist`
+- **Routing**: Client automatically connects to `https://chess-agent-pnt7.onrender.com/api/game` in production

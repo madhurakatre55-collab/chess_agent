@@ -1,4 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/game';
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+);
+
+const API_BASE = import.meta.env.VITE_API_URL || (
+  isLocal
+    ? 'http://localhost:8000/api/game'
+    : 'https://chess-agent-pnt7.onrender.com/api/game'
+);
 
 export const chessApi = {
   async getState() {
@@ -24,6 +33,7 @@ export const chessApi = {
     const res = await fetch(`${API_BASE}/ai-move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'AI move failed' }));
@@ -36,6 +46,7 @@ export const chessApi = {
     const res = await fetch(`${API_BASE}/hint`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to generate hint' }));
@@ -58,6 +69,7 @@ export const chessApi = {
     const res = await fetch(`${API_BASE}/undo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     if (!res.ok) throw new Error('Undo failed');
     return res.json();

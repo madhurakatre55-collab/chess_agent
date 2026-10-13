@@ -4,12 +4,14 @@ import { PieceRenderer } from './PieceRenderer';
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
+const DEFAULT_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
 // Helper to convert FEN string to an 8x8 square matrix
 function parseFen(fen) {
   const board = Array(8).fill(null).map(() => Array(8).fill(null));
-  if (!fen) return board;
+  const activeFen = fen || DEFAULT_FEN;
 
-  const placement = fen.split(' ')[0];
+  const placement = activeFen.split(' ')[0];
   const rows = placement.split('/');
 
   rows.forEach((row, rIdx) => {

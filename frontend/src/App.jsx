@@ -22,14 +22,19 @@ export default function App() {
   const [theme, setTheme] = useState('cyber');
   const [isMuted, setIsMuted] = useState(false);
 
-  // Fetch initial game state
-  const loadState = useCallback(async () => {
+  // Fetch initial game state with auto-retry for cloud server wake-up
+  const loadState = useCallback(async (retryCount = 0) => {
     try {
       const state = await chessApi.getState();
       setGameState(state);
       setErrorMsg('');
     } catch (err) {
-      setErrorMsg('Failed to connect to Chess Backend. Please ensure backend is running on port 8000.');
+      if (retryCount < 8) {
+        setErrorMsg('Connecting to AI Chess Engine... (waking up cloud server, please allow up to 30s)');
+        setTimeout(() => loadState(retryCount + 1), 3500);
+      } else {
+        setErrorMsg('Could not reach Chess Backend. Please check your connection or click "Reset Game" to retry.');
+      }
     }
   }, []);
 

@@ -1,4 +1,4 @@
-# Neural Chess: Cognitive AI Assistant & 3D Interactive Coach
+# AI-Based Autonomous Chess Assistant
 
 [![Live Web App](https://img.shields.io/badge/Live%20Demo-chess--agent--1.onrender.com-38bdf8?style=for-the-badge&logo=render)](https://chess-agent-1.onrender.com/)
 [![Backend API](https://img.shields.io/badge/Live%20API-FastAPI%20Docs-emerald?style=for-the-badge&logo=fastapi)](https://chess-agent-pnt7.onrender.com/docs)

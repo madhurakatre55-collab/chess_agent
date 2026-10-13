@@ -25,11 +25,11 @@ export const Navbar = ({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-white font-mono">
-                NEURAL CHESS
+              <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight text-white font-mono uppercase">
+                AI-Based Autonomous Chess Assistant
               </h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 uppercase tracking-widest font-mono">
-                COGNITIVE v2.0
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 uppercase tracking-widest font-mono hidden md:inline-block">
+                v2.0
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">

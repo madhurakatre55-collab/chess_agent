@@ -1,5 +1,5 @@
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "  Launching Neural Chess (FastAPI Backend + 3D Frontend)" -ForegroundColor Cyan
+Write-Host "  Launching AI-Based Autonomous Chess Assistant" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 
 # Start FastAPI backend

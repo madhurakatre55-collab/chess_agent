@@ -4,7 +4,7 @@ from backend.app.config import CORS_ORIGINS
 from backend.app.api.routes import router
 
 app = FastAPI(
-    title="Autonomous Chess Assistant & AI Coach API",
+    title="AI-Based Autonomous Chess Assistant API",
     description="Backend API for human vs AI chess gameplay, real-time tactical suggestions, and cognitive move tracing.",
     version="2.0.0",
 )
@@ -24,7 +24,7 @@ app.include_router(router)
 def health_check():
     return {
         "status": "online",
-        "service": "Chess Assistant API",
+        "service": "AI-Based Autonomous Chess Assistant API",
         "version": "2.0.0",
         "endpoints": ["/api/game/state", "/api/game/move", "/api/game/ai-move", "/api/game/hint", "/api/game/reset", "/api/game/undo"],
         "docs": "/docs",

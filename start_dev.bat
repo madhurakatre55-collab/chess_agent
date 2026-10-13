@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   Launching Neural Chess (Backend + 3D Frontend)
+echo   Launching AI-Based Autonomous Chess Assistant
 echo ========================================================
 
 echo [1/2] Starting FastAPI Backend on http://localhost:8000 ...

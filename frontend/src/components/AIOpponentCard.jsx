@@ -22,7 +22,7 @@ export const AIOpponentCard = ({
           </div>
           <div>
             <h3 className="text-base font-semibold text-white tracking-wide">
-              Neural AI Opponent
+              Autonomous AI Opponent
             </h3>
             <p className="text-xs text-purple-400/80 font-mono">
               Playing as Black
